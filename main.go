@@ -2,22 +2,23 @@ package main
 
 import (
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/waieez/nqueens/dangazone"
 	"github.com/waieez/nqueens/queen"
 )
 
 func main() {
-	count := Solve(14)
+	count := Solve(16)
 	fmt.Println("Solutions found:", count)
 }
 
-// Solves nQueens
-func Solve(n int) int {
+func SolveSeed(n, seed int) int {
 	qs := queen.Stack{}
 	dz := dangazone.New(n)
 	row := 0
-	col := 0
+	col := seed
 
 	// place queen in starting poisition
 	qs.Push(row, col)
@@ -25,6 +26,7 @@ func Solve(n int) int {
 	dz.Toggle(row, col)
 	// set starting row/column to be 1, 0
 	row = 1
+	col = 0
 
 	// for each starting point, try to find all solutions
 	count := 0
@@ -41,8 +43,8 @@ func Solve(n int) int {
 				// move to next row at this_row+1,0
 				col = 0
 				row++
-			} else {
 				// if a queen can't be placed, increment the column (and try again)
+			} else {
 				col++
 			}
 		}
@@ -52,10 +54,6 @@ func Solve(n int) int {
 		if row == n {
 			// we found a valid solution, increment the number of solutions by 1
 			count++
-		} else if row == 0 {
-			// else if the row is the home row, we exhausted all possiblilities
-			// return count
-			return count
 		}
 
 		// lets try again from the last queen placed
@@ -64,9 +62,46 @@ func Solve(n int) int {
 		row, col = q.Row, q.Col
 		// unset the dangazone for the old queen's poisition
 		dz.Toggle(row, col)
+		// Exhausted all possibilities from this seed position
+		if row == 0 && col == seed {
+			return count
+		}
 
 		// set current position to previous queen's row, col+1
 		col++
 	}
+	return count
+}
+
+// Solve Solves nQueens
+func Solve(n int) int {
+	count := 0
+	mid := (n - 1) / 2
+	even := n%2 == 0
+
+	wg := sync.WaitGroup{}
+	wg.Add(mid + 1)
+
+	ch := make(chan int, mid+1)
+	t := time.Now()
+	for seed := 0; seed <= mid; seed++ {
+		go (func(s int) {
+			ct := 0
+			sln := SolveSeed(n, s)
+			if s < mid || even {
+				ct += sln
+			}
+			ct += sln
+			ch <- ct
+			wg.Done()
+		})(seed)
+	}
+
+	wg.Wait()
+	close(ch)
+	for c := range ch {
+		count += c
+	}
+	fmt.Println(n, time.Since(t))
 	return count
 }

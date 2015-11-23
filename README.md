@@ -1,5 +1,6 @@
 basic nQueens algorithm in go
 
+'''code
 === RUN   TestSolve
 2 33.635µs
 3 6.68µs
@@ -17,3 +18,4 @@ basic nQueens algorithm in go
 15 9.061644302s
 16 59.679418352s
 --- PASS: TestSolve (70.53s)
+'''
